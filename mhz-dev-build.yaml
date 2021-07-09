@@ -1,0 +1,97 @@
+resources:
+- name: mhz-dev-vpc
+  type: compute.v1.network
+  properties:
+    autoCreateSubnetworks: false
+- name: mhz-dev-env
+  type: compute.v1.subnetwork
+  properties:
+    ipCidrRange: 10.128.0.0/24
+    network: $(ref.mhz-dev-vpc.selfLink)
+    region: europe-west1
+- name: mhz-dev-mgmt
+  type: compute.v1.subnetwork
+  properties:
+    ipCidrRange: 10.128.1.0/24
+    network: $(ref.mhz-dev-vpc.selfLink)
+    region: europe-west1
+
+- type: compute.v1.instance
+  name: mhzbstdev
+  properties:
+    zone: europe-west1-c
+    machineType: zones/europe-west1-c/machineTypes/e2-medium
+    disks:
+    - deviceName: boot
+      type: PERSISTENT
+      boot: true
+      autoDelete: true
+      initializeParams:
+        sourceImage: projects/windows-cloud/global/images/family/windows-2016
+    tags:
+      items:
+      - mhz-bastion-dev
+    networkInterfaces:
+    - network: $(ref.mhz-dev-vpc.selfLink)
+      subnetwork: $(ref.mhz-dev-mgmt.selfLink)
+      accessConfigs:
+      - name: External NAT
+        type: ONE_TO_ONE_NAT
+        natIP: 35.210.8.79
+        networkTier: STANDARD
+
+
+- type: compute.v1.instance
+  name: mhzs4jdevdb1
+  properties:
+    zone: europe-west1-c
+    machineType: zones/europe-west1-c/machineTypes/e2-standard-8
+    disks:
+    - deviceName: boot
+      type: PERSISTENT
+      boot: true
+      autoDelete: true
+      initializeParams:
+        sourceImage: projects/suse-sap-cloud/global/images/family/sles-15-sap
+        diskSizeGb: '60'
+    - deviceName: mhz-dev-db-data
+      type: PERSISTENT
+      mode: READ_WRITE
+      autoDelete: true
+      initializeParams:
+        diskName: mhz-dev-db-data
+        diskType: projects/mezzan/zones/us-central1-a/diskTypes/pd-balanced
+        diskSizeGb: '440'
+    tags:
+      items:
+      - mhz-dev-db
+    networkInterfaces:
+    - network: $(ref.mhz-dev-vpc.selfLink)
+      subnetwork: $(ref.mhz-dev-env.selfLink)
+- type: compute.v1.instance
+  name: mhzs4jdevap1
+  properties:
+    zone: europe-west1-c
+    machineType: zones/europe-west1-c/machineTypes/e2-standard-8
+    disks:
+    - deviceName: boot
+      type: PERSISTENT
+      boot: true
+      autoDelete: true
+      initializeParams:
+        sourceImage: projects/suse-sap-cloud/global/images/family/sles-15-sap
+        diskSizeGb: '60'
+    - deviceName: mhz-dev-app-data
+      type: PERSISTENT
+      mode: READ_WRITE
+      autoDelete: true
+      initializeParams:
+        diskName: mhz-dev-app-data
+        diskType: projects/mezzan/zones/us-central1-a/diskTypes/pd-balanced
+        diskSizeGb: '290'
+    tags:
+      items:
+      - mhz-dev-app
+    networkInterfaces:
+    - network: $(ref.mhz-dev-vpc.selfLink)
+      subnetwork: $(ref.mhz-dev-env.selfLink)
